@@ -26,8 +26,9 @@ Digital rain for your terminal, written in Rust 🦀
 - 🎲 **Every drop is unique**: random speed, length and spawn delay
 - 🧊 **No flicker**: only cells that changed are redrawn, never a full clear
 - 📐 **Resize-aware**: the rain rebuilds itself when the window changes
-- 🕶️ **Hacking mode** (`--glitch`): noise bursts, red alerts, mutating
-  glyphs and *SYSTEM BREACH* messages, randomly rotating
+- 🕶️ **Hacking mode** (`--glitch`): noise bursts, mutating glyphs,
+  *SYSTEM BREACH* alerts and cyberpunk neon banners, RGB-split text
+  and hacking feeds, randomly rotating
 - 🛟 **Safe exit**: your terminal is restored on quit, *even after a panic*
 
 ## 🚀 Getting started
@@ -76,7 +77,19 @@ matrix-term --help
 | `--charset <SET>` | `matrix` | Glyphs: `matrix` (katakana + digits + symbols) or `ascii` (printable ASCII only) |
 | `-g, --glitch` | off | 🕶️ Hacking mode: random glitch events while the rain falls |
 | `--glitch-intensity <X>` | `0.5` | How often / how strong glitches are, `0.0` (rare) to `1.0` (chaos) |
-| `--glitch-effects <LIST>` | all | Effects to rotate between: `noise`, `color`, `mutate`, `message` |
+| `--glitch-effects <LIST>` | all but `color` | Effects to rotate between (see below) |
+
+### 🕶️ Glitch effects
+
+| Effect | Default | Look |
+|---|---|---|
+| `noise` | ✅ | Bands of crackling glyphs tear across the screen |
+| `mutate` | ✅ | Glyphs change while they fall |
+| `message` | ✅ | Blinking red *SYSTEM BREACH*-style alert |
+| `banner` | ✅ | Cyberpunk neon box banner with jittering, RGB-split slices |
+| `chroma` | ✅ | Cyberpunk message split into magenta / white / cyan copies |
+| `feed` | ✅ | Cyberpunk panel that types out a hacking log with a progress bar |
+| `color` | ❌ | Trail glyphs flash red/white (opt-in) |
 
 ### Examples
 
@@ -93,8 +106,11 @@ matrix-term --charset ascii
 # Someone is hacking the system 🕶️
 matrix-term --glitch --glitch-intensity 0.8
 
-# Only alert colors and breach messages
-matrix-term -g --glitch-effects color,message
+# Only the cyberpunk effects
+matrix-term -g --glitch-effects banner,chroma,feed
+
+# Opt in to the color flashes too
+matrix-term -g --glitch-effects noise,color,message
 
 # Calm, long trails
 matrix-term --max-speed 0.5 --min-trail 20 --max-trail 50

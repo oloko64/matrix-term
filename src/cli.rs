@@ -38,11 +38,25 @@ pub enum GlitchEffectArg {
     Mutate,
     /// A blinking "SYSTEM BREACH"-style message.
     Message,
+    /// Cyberpunk: neon boxed banner with jittering slices.
+    Banner,
+    /// Cyberpunk: message with a magenta/cyan RGB split.
+    Chroma,
+    /// Cyberpunk: panel that types out a hacking log.
+    Feed,
 }
 
 impl GlitchEffectArg {
-    fn all() -> Vec<Self> {
-        vec![Self::Noise, Self::Color, Self::Mutate, Self::Message]
+    /// Default rotation. `color` is opt-in.
+    fn defaults() -> Vec<Self> {
+        vec![
+            Self::Noise,
+            Self::Mutate,
+            Self::Message,
+            Self::Banner,
+            Self::Chroma,
+            Self::Feed,
+        ]
     }
 }
 
@@ -53,6 +67,9 @@ impl From<GlitchEffectArg> for glitch::Kind {
             GlitchEffectArg::Color => glitch::Kind::Color,
             GlitchEffectArg::Mutate => glitch::Kind::Mutate,
             GlitchEffectArg::Message => glitch::Kind::Message,
+            GlitchEffectArg::Banner => glitch::Kind::Banner,
+            GlitchEffectArg::Chroma => glitch::Kind::Chroma,
+            GlitchEffectArg::Feed => glitch::Kind::Feed,
         }
     }
 }
@@ -116,7 +133,7 @@ pub struct Cli {
 
     /// Glitch effects to rotate between (comma-separated).
     #[arg(long, value_enum, value_delimiter = ',',
-          default_values_t = GlitchEffectArg::all(), requires = "glitch")]
+          default_values_t = GlitchEffectArg::defaults(), requires = "glitch")]
     pub glitch_effects: Vec<GlitchEffectArg>,
 }
 
@@ -228,11 +245,25 @@ mod tests {
     }
 
     #[test]
-    fn glitch_defaults_to_all_effects() {
+    fn glitch_defaults_to_all_effects_but_color() {
+        use glitch::Kind;
         let cfg = Cli::parse_from(["matrix-term", "--glitch"]).into_config();
         let g = cfg.glitch.expect("glitch enabled");
-        assert_eq!(g.effects, glitch::Kind::ALL.to_vec());
+        assert!(!g.effects.contains(&Kind::Color));
+        let all_but_color: Vec<Kind> = Kind::ALL
+            .into_iter()
+            .filter(|k| *k != Kind::Color)
+            .collect();
+        assert_eq!(g.effects, all_but_color);
         assert_eq!(g.intensity, defaults::GLITCH_INTENSITY);
+    }
+
+    #[test]
+    fn color_glitch_is_still_selectable() {
+        let cfg =
+            Cli::parse_from(["matrix-term", "-g", "--glitch-effects", "color,feed"]).into_config();
+        let g = cfg.glitch.expect("glitch enabled");
+        assert_eq!(g.effects, vec![glitch::Kind::Color, glitch::Kind::Feed]);
     }
 
     #[test]

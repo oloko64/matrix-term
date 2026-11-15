@@ -6,7 +6,9 @@ use std::io::{self, BufWriter, Stdout, Write};
 use crossterm::{
     cursor::MoveTo,
     queue,
-    style::{Attribute, Color, Print, ResetColor, SetAttribute, SetForegroundColor},
+    style::{
+        Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
+    },
     terminal::{Clear, ClearType},
 };
 use rand::{RngExt, rngs::ThreadRng};
@@ -19,8 +21,6 @@ use crate::{
 
 const ALERT_RED: Rgb = Rgb(255, 40, 60);
 const ALERT_WHITE: Rgb = Rgb(255, 255, 255);
-const NOISE_BRIGHT: Rgb = Rgb(230, 255, 230);
-const NOISE_DIM: Rgb = Rgb(90, 110, 90);
 
 pub struct Renderer {
     out: BufWriter<Stdout>,
@@ -72,27 +72,20 @@ impl Renderer {
             }
         }
 
-        for band in &fx.noise {
-            let color = if band.bright { NOISE_BRIGHT } else { NOISE_DIM };
-            let text: String = band.glyphs.iter().collect();
+        for span in &fx.spans {
+            let text: String = span.text.iter().collect();
             queue!(
                 self.out,
-                MoveTo(band.start, band.row),
-                SetForegroundColor(to_color(color)),
-                Print(text)
+                MoveTo(span.col, span.row),
+                SetForegroundColor(to_color(span.style.fg))
             )?;
-        }
-
-        if let Some(msg) = &fx.message {
-            let text: String = msg.text.iter().collect();
-            queue!(
-                self.out,
-                MoveTo(msg.col, msg.row),
-                SetAttribute(Attribute::Bold),
-                SetForegroundColor(to_color(ALERT_RED)),
-                Print(text),
-                SetAttribute(Attribute::Reset)
-            )?;
+            if let Some(bg) = span.style.bg {
+                queue!(self.out, SetBackgroundColor(to_color(bg)))?;
+            }
+            if span.style.bold {
+                queue!(self.out, SetAttribute(Attribute::Bold))?;
+            }
+            queue!(self.out, Print(text), SetAttribute(Attribute::Reset))?;
         }
 
         queue!(self.out, ResetColor)?;
