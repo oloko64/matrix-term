@@ -1,8 +1,30 @@
 //! Command-line interface. Parses flags and turns them into a `Config`.
 
-use clap::{CommandFactory, Parser, error::ErrorKind};
+use clap::{CommandFactory, Parser, ValueEnum, error::ErrorKind};
 
-use crate::config::{Config, Rgb, defaults};
+use crate::{
+    charset::Charset,
+    config::{Config, Rgb, defaults},
+};
+
+/// Which glyphs the rain is made of.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
+pub enum CharsetChoice {
+    /// Half-width katakana, digits and symbols, like the movie.
+    #[default]
+    Matrix,
+    /// Printable ASCII only (letters, digits, symbols).
+    Ascii,
+}
+
+impl From<CharsetChoice> for Charset {
+    fn from(choice: CharsetChoice) -> Self {
+        match choice {
+            CharsetChoice::Matrix => Charset::matrix(),
+            CharsetChoice::Ascii => Charset::ascii(),
+        }
+    }
+}
 
 /// Matrix digital rain for your terminal.
 #[derive(Debug, Parser)]
@@ -47,6 +69,10 @@ pub struct Cli {
     /// Head (leading glyph) color, as hex.
     #[arg(long, default_value_t = defaults::HEAD_COLOR)]
     pub head_color: Rgb,
+
+    /// Glyphs the rain is made of.
+    #[arg(long, value_enum, default_value_t)]
+    pub charset: CharsetChoice,
 }
 
 impl Cli {
@@ -66,13 +92,15 @@ impl Cli {
             max_spawn_delay: self.max_delay,
             head_color: self.head_color,
             trail_color: self.color,
-            ..Config::default()
+            charset: self.charset.into(),
         }
     }
 }
 
 fn fail(msg: &str) -> ! {
-    Cli::command().error(ErrorKind::ArgumentConflict, msg).exit()
+    Cli::command()
+        .error(ErrorKind::ArgumentConflict, msg)
+        .exit()
 }
 
 fn positive_f32(s: &str) -> Result<f32, String> {
@@ -114,7 +142,18 @@ mod tests {
     }
 
     #[test]
+    fn charset_defaults_to_matrix() {
+        assert_eq!(
+            Cli::parse_from(["matrix-term"]).charset,
+            CharsetChoice::Matrix
+        );
+        let cli = Cli::parse_from(["matrix-term", "--charset", "ascii"]);
+        assert_eq!(cli.charset, CharsetChoice::Ascii);
+    }
+
+    #[test]
     fn rejects_bad_values() {
+        assert!(Cli::try_parse_from(["matrix-term", "--charset", "emoji"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "--fps", "0"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "--min-speed", "-1"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "-c", "green"]).is_err());

@@ -52,7 +52,7 @@ matrix-term
 | `q` / `Esc` / `Ctrl+C` | Exit the Matrix |
 
 > 💡 Use a terminal with **truecolor** support and a font that has
-> half-width katakana for the best look.
+> half-width katakana for the best look (or use `--charset ascii`).
 
 ## ⚙️ Options
 
@@ -71,6 +71,7 @@ matrix-term --help
 | `--max-delay <N>` | `90` | Max frames a column waits before dropping again |
 | `-c, --color <HEX>` | `#00ff46` | Trail color (fades toward the tail) |
 | `--head-color <HEX>` | `#dcffdc` | Color of the leading glyph |
+| `--charset <SET>` | `matrix` | Glyphs: `matrix` (katakana + digits + symbols) or `ascii` (printable ASCII only) |
 
 ### Examples
 
@@ -80,6 +81,9 @@ matrix-term -s 1 --min-speed 0.8 --max-speed 2
 
 # Red pill 💊
 matrix-term -c '#ff2050' --head-color '#ffffff'
+
+# Plain ASCII, for fonts without katakana
+matrix-term --charset ascii
 
 # Calm, long trails
 matrix-term --max-speed 0.5 --min-trail 20 --max-trail 50

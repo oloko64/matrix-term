@@ -17,7 +17,31 @@ impl Charset {
         Self { glyphs }
     }
 
+    /// Printable ASCII only: letters, digits and symbols (no space).
+    pub fn ascii() -> Self {
+        Self {
+            glyphs: ('!'..='~').collect(),
+        }
+    }
+
     pub fn random<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
         *self.glyphs.choose(rng).expect("charset must not be empty")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ascii_charset_is_printable_ascii_only() {
+        let set = Charset::ascii();
+        assert!(set.glyphs.iter().all(|c| c.is_ascii_graphic()));
+        assert_eq!(set.glyphs.len(), 94);
+    }
+
+    #[test]
+    fn matrix_charset_has_katakana() {
+        assert!(Charset::matrix().glyphs.contains(&'\u{FF71}'));
     }
 }
