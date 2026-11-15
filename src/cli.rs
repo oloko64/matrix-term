@@ -5,6 +5,7 @@ use clap::{CommandFactory, Parser, ValueEnum, error::ErrorKind};
 use crate::{
     charset::Charset,
     config::{Config, Rgb, defaults},
+    glitch::{self, GlitchConfig},
 };
 
 /// Which glyphs the rain is made of.
@@ -22,6 +23,36 @@ impl From<CharsetChoice> for Charset {
         match choice {
             CharsetChoice::Matrix => Charset::matrix(),
             CharsetChoice::Ascii => Charset::ascii(),
+        }
+    }
+}
+
+/// Glitch effects for `--glitch-effects`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum GlitchEffectArg {
+    /// Horizontal bands of crackling noise.
+    Noise,
+    /// Glyphs flash red/white like an intrusion alert.
+    Color,
+    /// Glyphs change while they fall.
+    Mutate,
+    /// A blinking "SYSTEM BREACH"-style message.
+    Message,
+}
+
+impl GlitchEffectArg {
+    fn all() -> Vec<Self> {
+        vec![Self::Noise, Self::Color, Self::Mutate, Self::Message]
+    }
+}
+
+impl From<GlitchEffectArg> for glitch::Kind {
+    fn from(arg: GlitchEffectArg) -> Self {
+        match arg {
+            GlitchEffectArg::Noise => glitch::Kind::Noise,
+            GlitchEffectArg::Color => glitch::Kind::Color,
+            GlitchEffectArg::Mutate => glitch::Kind::Mutate,
+            GlitchEffectArg::Message => glitch::Kind::Message,
         }
     }
 }
@@ -73,6 +104,20 @@ pub struct Cli {
     /// Glyphs the rain is made of.
     #[arg(long, value_enum, default_value_t)]
     pub charset: CharsetChoice,
+
+    /// Hacking mode: random glitch events while the rain falls.
+    #[arg(short, long)]
+    pub glitch: bool,
+
+    /// Glitch strength and frequency, from 0.0 (rare) to 1.0 (chaos).
+    #[arg(long, default_value_t = defaults::GLITCH_INTENSITY,
+          value_parser = unit_f32, requires = "glitch")]
+    pub glitch_intensity: f32,
+
+    /// Glitch effects to rotate between (comma-separated).
+    #[arg(long, value_enum, value_delimiter = ',',
+          default_values_t = GlitchEffectArg::all(), requires = "glitch")]
+    pub glitch_effects: Vec<GlitchEffectArg>,
 }
 
 impl Cli {
@@ -93,6 +138,18 @@ impl Cli {
             head_color: self.head_color,
             trail_color: self.color,
             charset: self.charset.into(),
+            glitch: self.glitch.then(|| {
+                let mut effects: Vec<glitch::Kind> = Vec::new();
+                for kind in self.glitch_effects.into_iter().map(Into::into) {
+                    if !effects.contains(&kind) {
+                        effects.push(kind);
+                    }
+                }
+                GlitchConfig {
+                    intensity: self.glitch_intensity,
+                    effects,
+                }
+            }),
         }
     }
 }
@@ -109,6 +166,15 @@ fn positive_f32(s: &str) -> Result<f32, String> {
         Ok(v)
     } else {
         Err(format!("`{s}` must be a positive number"))
+    }
+}
+
+fn unit_f32(s: &str) -> Result<f32, String> {
+    let v: f32 = s.parse().map_err(|_| format!("`{s}` is not a number"))?;
+    if (0.0..=1.0).contains(&v) {
+        Ok(v)
+    } else {
+        Err(format!("`{s}` must be between 0.0 and 1.0"))
     }
 }
 
@@ -152,7 +218,49 @@ mod tests {
     }
 
     #[test]
+    fn glitch_is_off_by_default() {
+        assert!(
+            Cli::parse_from(["matrix-term"])
+                .into_config()
+                .glitch
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn glitch_defaults_to_all_effects() {
+        let cfg = Cli::parse_from(["matrix-term", "--glitch"]).into_config();
+        let g = cfg.glitch.expect("glitch enabled");
+        assert_eq!(g.effects, glitch::Kind::ALL.to_vec());
+        assert_eq!(g.intensity, defaults::GLITCH_INTENSITY);
+    }
+
+    #[test]
+    fn glitch_effects_can_be_selected() {
+        let cfg = Cli::parse_from([
+            "matrix-term",
+            "--glitch",
+            "--glitch-intensity",
+            "0.9",
+            "--glitch-effects",
+            "noise,message,noise",
+        ])
+        .into_config();
+        let g = cfg.glitch.expect("glitch enabled");
+        assert_eq!(g.effects, vec![glitch::Kind::Noise, glitch::Kind::Message]);
+        assert_eq!(g.intensity, 0.9);
+    }
+
+    #[test]
+    fn glitch_options_require_glitch() {
+        assert!(Cli::try_parse_from(["matrix-term", "--glitch-intensity", "0.5"]).is_err());
+        assert!(Cli::try_parse_from(["matrix-term", "--glitch-effects", "noise"]).is_err());
+    }
+
+    #[test]
     fn rejects_bad_values() {
+        assert!(Cli::try_parse_from(["matrix-term", "-g", "--glitch-intensity", "1.5"]).is_err());
+        assert!(Cli::try_parse_from(["matrix-term", "-g", "--glitch-effects", "lasers"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "--charset", "emoji"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "--fps", "0"]).is_err());
         assert!(Cli::try_parse_from(["matrix-term", "--min-speed", "-1"]).is_err());

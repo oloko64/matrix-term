@@ -103,6 +103,7 @@ impl Drop {
 /// All drops on screen.
 pub struct Rain {
     drops: Vec<Drop>,
+    width: u16,
     height: u16,
     rng: ThreadRng,
 }
@@ -111,6 +112,7 @@ impl Rain {
     pub fn new(width: u16, height: u16, cfg: &Config) -> Self {
         let mut rain = Self {
             drops: Vec::new(),
+            width,
             height,
             rng: rand::rng(),
         };
@@ -120,6 +122,7 @@ impl Rain {
 
     /// Rebuilds every column for the new terminal size.
     pub fn resize(&mut self, width: u16, height: u16, cfg: &Config) {
+        self.width = width;
         self.height = height;
         let step = cfg.column_spacing.max(1) as usize;
         self.drops = (0..width)
@@ -134,8 +137,24 @@ impl Rain {
         }
     }
 
+    /// Randomly swaps glyphs inside the trails (glitch effect).
+    pub fn mutate(&mut self, chance: f32, cfg: &Config) {
+        let chance = f64::from(chance.clamp(0.0, 1.0));
+        for drop in &mut self.drops {
+            for glyph in &mut drop.trail {
+                if self.rng.random_bool(chance) {
+                    *glyph = cfg.charset.random(&mut self.rng);
+                }
+            }
+        }
+    }
+
     pub fn drops(&self) -> &[Drop] {
         &self.drops
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
     }
 
     pub fn height(&self) -> u16 {
@@ -165,6 +184,19 @@ mod tests {
         rain.resize(10, 5, &cfg);
         assert_eq!(rain.drops().len(), 10);
         assert!(rain.drops().iter().all(|d| d.x < 10));
+    }
+
+    #[test]
+    fn mutate_keeps_trail_lengths() {
+        let cfg = Config::default();
+        let mut rain = Rain::new(40, 20, &cfg);
+        for _ in 0..50 {
+            rain.update(&cfg);
+        }
+        let lens: Vec<_> = rain.drops().iter().map(|d| d.trail.len()).collect();
+        rain.mutate(1.0, &cfg);
+        let after: Vec<_> = rain.drops().iter().map(|d| d.trail.len()).collect();
+        assert_eq!(lens, after);
     }
 
     #[test]

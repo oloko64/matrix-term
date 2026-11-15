@@ -9,6 +9,7 @@ use crossterm::terminal;
 
 use crate::{
     config::Config,
+    glitch::{Frame, Glitch},
     input::{self, Action},
     rain::Rain,
     render::Renderer,
@@ -17,6 +18,7 @@ use crate::{
 pub fn run(cfg: &Config) -> io::Result<()> {
     let (width, height) = terminal::size()?;
     let mut rain = Rain::new(width, height, cfg);
+    let mut glitch = cfg.glitch.clone().map(|g| Glitch::new(g, cfg.fps));
     let mut renderer = Renderer::new();
     renderer.clear()?;
 
@@ -25,7 +27,14 @@ pub fn run(cfg: &Config) -> io::Result<()> {
     loop {
         let start = Instant::now();
         rain.update(cfg);
-        renderer.draw(&rain, cfg)?;
+        let fx = match glitch.as_mut() {
+            Some(g) => g.update(rain.width(), rain.height(), &cfg.charset),
+            None => Frame::default(),
+        };
+        if fx.mutate_chance > 0.0 {
+            rain.mutate(fx.mutate_chance, cfg);
+        }
+        renderer.draw(&rain, cfg, &fx)?;
 
         // Spend the rest of the frame waiting for input.
         while let Some(remaining) = frame.checked_sub(start.elapsed()) {
@@ -33,6 +42,9 @@ pub fn run(cfg: &Config) -> io::Result<()> {
                 Some(Action::Quit) => return Ok(()),
                 Some(Action::Resize(w, h)) => {
                     rain.resize(w, h, cfg);
+                    if let Some(g) = glitch.as_mut() {
+                        g.reset();
+                    }
                     renderer.clear()?;
                 }
                 None => {}

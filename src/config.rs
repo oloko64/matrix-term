@@ -3,7 +3,7 @@
 
 use std::{fmt, ops::RangeInclusive, str::FromStr};
 
-use crate::charset::Charset;
+use crate::{charset::Charset, glitch::GlitchConfig};
 
 /// Default values, shared by `Config::default()` and the CLI help text.
 pub mod defaults {
@@ -18,6 +18,7 @@ pub mod defaults {
     pub const MAX_SPAWN_DELAY: u32 = 90;
     pub const HEAD_COLOR: Rgb = Rgb(220, 255, 220);
     pub const TRAIL_COLOR: Rgb = Rgb(0, 255, 70);
+    pub const GLITCH_INTENSITY: f32 = 0.5;
 }
 
 /// Plain RGB color, independent of the terminal backend.
@@ -63,6 +64,8 @@ pub struct Config {
     pub trail_color: Rgb,
     /// Glyphs the rain is made of.
     pub charset: Charset,
+    /// Hacking/glitch mode; `None` = off.
+    pub glitch: Option<GlitchConfig>,
 }
 
 impl Default for Config {
@@ -77,6 +80,7 @@ impl Default for Config {
             head_color: HEAD_COLOR,
             trail_color: TRAIL_COLOR,
             charset: Charset::matrix(),
+            glitch: None,
         }
     }
 }

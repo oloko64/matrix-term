@@ -2,6 +2,7 @@ mod app;
 mod charset;
 mod cli;
 mod config;
+mod glitch;
 mod input;
 mod rain;
 mod render;

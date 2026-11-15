@@ -26,6 +26,8 @@ Digital rain for your terminal, written in Rust 🦀
 - 🎲 **Every drop is unique**: random speed, length and spawn delay
 - 🧊 **No flicker**: only cells that changed are redrawn, never a full clear
 - 📐 **Resize-aware**: the rain rebuilds itself when the window changes
+- 🕶️ **Hacking mode** (`--glitch`): noise bursts, red alerts, mutating
+  glyphs and *SYSTEM BREACH* messages, randomly rotating
 - 🛟 **Safe exit**: your terminal is restored on quit, *even after a panic*
 
 ## 🚀 Getting started
@@ -72,6 +74,9 @@ matrix-term --help
 | `-c, --color <HEX>` | `#00ff46` | Trail color (fades toward the tail) |
 | `--head-color <HEX>` | `#dcffdc` | Color of the leading glyph |
 | `--charset <SET>` | `matrix` | Glyphs: `matrix` (katakana + digits + symbols) or `ascii` (printable ASCII only) |
+| `-g, --glitch` | off | 🕶️ Hacking mode: random glitch events while the rain falls |
+| `--glitch-intensity <X>` | `0.5` | How often / how strong glitches are, `0.0` (rare) to `1.0` (chaos) |
+| `--glitch-effects <LIST>` | all | Effects to rotate between: `noise`, `color`, `mutate`, `message` |
 
 ### Examples
 
@@ -84,6 +89,12 @@ matrix-term -c '#ff2050' --head-color '#ffffff'
 
 # Plain ASCII, for fonts without katakana
 matrix-term --charset ascii
+
+# Someone is hacking the system 🕶️
+matrix-term --glitch --glitch-intensity 0.8
+
+# Only alert colors and breach messages
+matrix-term -g --glitch-effects color,message
 
 # Calm, long trails
 matrix-term --max-speed 0.5 --min-trail 20 --max-trail 50
@@ -99,6 +110,7 @@ src/
 ├── app.rs       → main loop: update → render → input
 ├── cli.rs       → command-line flags (clap) → Config
 ├── config.rs    → every tunable setting + defaults
+├── glitch.rs    → hacking mode: glitch events (pure logic, unit tested)
 ├── charset.rs   → glyph pools
 ├── rain.rs      → simulation (pure logic, unit tested)
 ├── render.rs    → draws the rain with crossterm
@@ -115,7 +127,8 @@ color theme? Touch `config.rs`/`render.rs`. New rain behaviour? Touch
 
 - [x] Command-line flags (speed, density, colors, fps)
 - [ ] Color themes
-- [ ] Glyphs that mutate inside the trail
+- [x] Glyphs that mutate inside the trail
+- [x] Hacking / glitch mode
 - [ ] Pause / runtime speed & density controls
 - [ ] Hidden message mode
 
