@@ -1,5 +1,6 @@
 mod app;
 mod charset;
+mod cli;
 mod config;
 mod input;
 mod rain;
@@ -8,11 +9,14 @@ mod terminal;
 
 use std::io;
 
-use config::Config;
+use clap::Parser;
+
+use cli::Cli;
 use terminal::TerminalGuard;
 
 fn main() -> io::Result<()> {
-    let cfg = Config::default();
+    // Parse before touching the terminal so --help / errors print normally.
+    let cfg = Cli::parse().into_config();
     let _guard = TerminalGuard::new()?;
     app::run(&cfg)
 }

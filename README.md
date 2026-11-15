@@ -54,20 +54,36 @@ matrix-term
 > 💡 Use a terminal with **truecolor** support and a font that has
 > half-width katakana for the best look.
 
-## ⚙️ Configuration
+## ⚙️ Options
 
-For now, settings live in [`src/config.rs`](src/config.rs):
+```sh
+matrix-term --help
+```
 
-| Setting | Default | What it does |
+| Flag | Default | What it does |
 |---|---|---|
-| `fps` | `30` | Frames per second |
-| `column_spacing` | `2` | Gap between rain columns (`1` = densest) |
-| `trail_len` | `6..=30` | Trail length range, in rows |
-| `speed` | `0.3..=1.0` | Fall speed range, in rows per frame |
-| `max_spawn_delay` | `90` | Max frames a column waits before a new drop |
-| `head_color` | `Rgb(220, 255, 220)` | Color of the leading glyph |
-| `trail_color` | `Rgb(0, 255, 70)` | Trail color (fades toward the tail) |
-| `charset` | `Charset::matrix()` | Glyphs the rain is made of |
+| `--fps <N>` | `30` | Frames per second (1–240) |
+| `-s, --spacing <N>` | `2` | Gap between rain columns (`1` = densest) |
+| `--min-trail <N>` | `6` | Shortest trail, in rows |
+| `--max-trail <N>` | `30` | Longest trail, in rows |
+| `--min-speed <X>` | `0.3` | Slowest fall speed, in rows per frame |
+| `--max-speed <X>` | `1` | Fastest fall speed, in rows per frame |
+| `--max-delay <N>` | `90` | Max frames a column waits before dropping again |
+| `-c, --color <HEX>` | `#00ff46` | Trail color (fades toward the tail) |
+| `--head-color <HEX>` | `#dcffdc` | Color of the leading glyph |
+
+### Examples
+
+```sh
+# Dense, fast downpour
+matrix-term -s 1 --min-speed 0.8 --max-speed 2
+
+# Red pill 💊
+matrix-term -c '#ff2050' --head-color '#ffffff'
+
+# Calm, long trails
+matrix-term --max-speed 0.5 --min-trail 20 --max-trail 50
+```
 
 ## 🧩 Architecture
 
@@ -77,7 +93,8 @@ The project is split so new features touch as few places as possible:
 src/
 ├── main.rs      → wiring only
 ├── app.rs       → main loop: update → render → input
-├── config.rs    → every tunable setting
+├── cli.rs       → command-line flags (clap) → Config
+├── config.rs    → every tunable setting + defaults
 ├── charset.rs   → glyph pools
 ├── rain.rs      → simulation (pure logic, unit tested)
 ├── render.rs    → draws the rain with crossterm
@@ -92,7 +109,7 @@ color theme? Touch `config.rs`/`render.rs`. New rain behaviour? Touch
 
 ## 🗺️ Roadmap
 
-- [ ] Command-line flags (speed, density, colors, fps)
+- [x] Command-line flags (speed, density, colors, fps)
 - [ ] Color themes
 - [ ] Glyphs that mutate inside the trail
 - [ ] Pause / runtime speed & density controls
