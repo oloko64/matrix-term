@@ -41,11 +41,11 @@ cd matrix-term
 cargo run --release
 ```
 
-Or install it so it's always one command away:
+Or install it so it's always one command away. The installed command is **`mterm`**:
 
 ```sh
 cargo install --path .
-matrix-term
+mterm
 ```
 
 ## 🎮 Controls
@@ -60,7 +60,7 @@ matrix-term
 ## ⚙️ Options
 
 ```sh
-matrix-term --help
+mterm --help
 ```
 
 | Flag | Default | What it does |
@@ -95,25 +95,25 @@ matrix-term --help
 
 ```sh
 # Dense, fast downpour
-matrix-term -s 1 --min-speed 0.8 --max-speed 2
+mterm -s 1 --min-speed 0.8 --max-speed 2
 
 # Red pill 💊
-matrix-term -c '#ff2050' --head-color '#ffffff'
+mterm -c '#ff2050' --head-color '#ffffff'
 
 # Plain ASCII, for fonts without katakana
-matrix-term --charset ascii
+mterm --charset ascii
 
 # Someone is hacking the system 🕶️
-matrix-term --glitch --glitch-intensity 0.8
+mterm --glitch --glitch-intensity 0.8
 
 # Only the cyberpunk effects
-matrix-term -g --glitch-effects banner,chroma,feed
+mterm -g --glitch-effects banner,chroma,feed
 
 # Opt in to the color flashes too
-matrix-term -g --glitch-effects noise,color,message
+mterm -g --glitch-effects noise,color,message
 
 # Calm, long trails
-matrix-term --max-speed 0.5 --min-trail 20 --max-trail 50
+mterm --max-speed 0.5 --min-trail 20 --max-trail 50
 ```
 
 ## 🧩 Architecture
